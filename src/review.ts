@@ -32,6 +32,12 @@ export const codeReview = async (
 ): Promise<void> => {
   const disableSummary = true;
 
+  info('Started review processes');
+
+  if (disableSummary) {
+    info('Summary generation is disabled');
+  }
+
   const commenter: Commenter = new Commenter()
 
   const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
@@ -373,7 +379,7 @@ ${hunks.oldHunk}
     }
   }
 
-  if (options.disableReleaseNotes === false) {
+  if (!disableSummary && options.disableReleaseNotes === false) {
     // final release notes
     const [releaseNotesResponse] = await heavyBot.chat(
       prompts.renderSummarizeReleaseNotes(inputs),
