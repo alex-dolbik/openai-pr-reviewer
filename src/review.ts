@@ -328,7 +328,9 @@ ${hunks.oldHunk}
   const summaryPromises = []
   const skippedFiles = []
 
-  if (!disableSummary) { // disable summary
+  let summarizeComment = ''
+  let summaries: Array<[string, string, boolean]> = []
+  if (!disableSummary) {
     for (const [filename, fileContent, fileDiff] of filesAndChanges) {
       if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
         summaryPromises.push(
@@ -340,11 +342,11 @@ ${hunks.oldHunk}
         skippedFiles.push(filename)
       }
     }
-  
-    const summaries = (await Promise.all(summaryPromises)).filter(
+
+    summaries = (await Promise.all(summaryPromises)).filter(
       summary => summary !== null
     ) as Array<[string, string, boolean]>
-  
+
     if (summaries.length > 0) {
       const batchSize = 10
       // join summaries into one in the batches of batchSize
@@ -368,7 +370,7 @@ ${hunks.oldHunk}
         }
       }
     }
-  
+
     // final summary
     const [summarizeFinalResponse] = await heavyBot.chat(
       prompts.renderSummarize(inputs),
@@ -377,39 +379,36 @@ ${hunks.oldHunk}
     if (summarizeFinalResponse === '') {
       info('summarize: nothing obtained from openai')
     }
-  }
 
-  if (!disableSummary && options.disableReleaseNotes === false) {
-    // final release notes
-    const [releaseNotesResponse] = await heavyBot.chat(
-      prompts.renderSummarizeReleaseNotes(inputs),
-      {}
-    )
-    if (releaseNotesResponse === '') {
-      info('release notes: nothing obtained from openai')
-    } else {
-      let message = '### Summary by OpenAI\n\n'
-      message += releaseNotesResponse
-      try {
-        await commenter.updateDescription(
-          context.payload.pull_request.number,
-          message
-        )
-      } catch (e: any) {
-        warning(`release notes: error from github: ${e.message as string}`)
-      }
-    }
-  }
-
-  // generate a short summary as well
-  if (!disableSummary) { // disable summary
-      const [summarizeShortResponse] = await heavyBot.chat(
-        prompts.renderSummarizeShort(inputs),
+    if (options.disableReleaseNotes === false) {
+      // final release notes
+      const [releaseNotesResponse] = await heavyBot.chat(
+        prompts.renderSummarizeReleaseNotes(inputs),
         {}
       )
-      inputs.shortSummary = summarizeShortResponse
-    
-      let summarizeComment = `${summarizeFinalResponse}
+      if (releaseNotesResponse === '') {
+        info('release notes: nothing obtained from openai')
+      } else {
+        let message = '### Summary by OpenAI\n\n'
+        message += releaseNotesResponse
+        try {
+          await commenter.updateDescription(
+            context.payload.pull_request.number,
+            message
+          )
+        } catch (e: any) {
+          warning(`release notes: error from github: ${e.message as string}`)
+        }
+      }
+    }
+
+    const [summarizeShortResponse] = await heavyBot.chat(
+      prompts.renderSummarizeShort(inputs),
+      {}
+    )
+    inputs.shortSummary = summarizeShortResponse
+
+    summarizeComment = `${summarizeFinalResponse}
     ${RAW_SUMMARY_START_TAG}
     ${inputs.rawSummary}
     ${RAW_SUMMARY_END_TAG}
@@ -451,8 +450,8 @@ ${hunks.oldHunk}
         ? `
     <details>
     <summary>Files not processed due to max files limit (${
-            skippedFiles.length
-          })</summary>
+      skippedFiles.length
+    })</summary>
     
     ### Not processed
     
@@ -468,8 +467,8 @@ ${hunks.oldHunk}
         ? `
     <details>
     <summary>Files not summarized due to errors (${
-            summariesFailed.length
-          })</summary>
+      summariesFailed.length
+    })</summary>
     
     ### Failed to summarize
     
@@ -665,11 +664,11 @@ In the recent run, only the files that changed from the \`base\` of the PR and b
     }\` commits were reviewed.
 
 ${
-  reviewsFailed.length > 0
-    ? `<details>
+      reviewsFailed.length > 0
+        ? `<details>
 <summary>Files not reviewed due to errors in the recent run (${
-        reviewsFailed.length
-      })</summary>
+          reviewsFailed.length
+        })</summary>
 
 ### Failed to review in the last run
 
@@ -677,15 +676,15 @@ ${
 
 </details>
 `
-    : ''
-}
+        : ''
+    }
 
 ${
-  reviewsSkipped.length > 0
-    ? `<details>
+      reviewsSkipped.length > 0
+        ? `<details>
 <summary>Files not reviewed due to simple changes (${
-        reviewsSkipped.length
-      })</summary>
+          reviewsSkipped.length
+        })</summary>
 
 ### Skipped review in the recent run
 
@@ -693,18 +692,18 @@ ${
 
 </details>
 `
-    : ''
-}
+        : ''
+    }
 `
     // add existing_comment_ids_block with latest head sha
     summarizeComment += `\n${commenter.addReviewedCommitId(
       existingCommitIdsBlock,
       context.payload.pull_request.head.sha
     )}`
-  }
 
-  // post the final summary comment
-  await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
+    // post the final summary comment
+    await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
+  }
 
   // post the review
   await commenter.submitReview(
@@ -740,8 +739,8 @@ const splitPatch = (patch: string | null | undefined): string[] => {
 const patchStartEndLine = (
   patch: string
 ): {
-  oldHunk: {startLine: number; endLine: number}
-  newHunk: {startLine: number; endLine: number}
+  oldHunk: { startLine: number; endLine: number }
+  newHunk: { startLine: number; endLine: number }
 } | null => {
   const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
   const match = pattern.exec(patch)
@@ -767,7 +766,7 @@ const patchStartEndLine = (
 
 const parsePatch = (
   patch: string
-): {oldHunk: string; newHunk: string} | null => {
+): { oldHunk: string; newHunk: string } | null => {
   const hunkInfo = patchStartEndLine(patch)
   if (hunkInfo == null) {
     return null
@@ -827,6 +826,7 @@ function parseReview(
   let currentStartLine: number | null = null
   let currentEndLine: number | null = null
   let currentComment = ''
+
   function storeReview(): void {
     if (currentStartLine !== null && currentEndLine !== null) {
       const sanitizedComment = sanitizeComment(currentComment.trim())
@@ -913,9 +913,9 @@ ${review.comment}`
       suggestionStartIndex = comment.indexOf(
         suggestionStart,
         suggestionStartIndex +
-          suggestionStart.length +
-          sanitizedBlock.length +
-          suggestionEnd.length
+        suggestionStart.length +
+        sanitizedBlock.length +
+        suggestionEnd.length
       )
     }
 

@@ -12,7 +12,7 @@ export const octokit = new RetryAndThrottlingOctokit({
     onRateLimit: (
       retryAfter: number,
       options: any,
-      _o: Octokit,
+      _o: any, //Octokit,
       retryCount: number
     ) => {
       warning(
