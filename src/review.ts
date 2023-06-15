@@ -30,6 +30,8 @@ export const codeReview = async (
   options: Options,
   prompts: Prompts
 ): Promise<void> => {
+  const disableSummary = true;
+
   const commenter: Commenter = new Commenter()
 
   const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
@@ -319,53 +321,56 @@ ${hunks.oldHunk}
 
   const summaryPromises = []
   const skippedFiles = []
-  for (const [filename, fileContent, fileDiff] of filesAndChanges) {
-    if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
-      summaryPromises.push(
-        openaiConcurrencyLimit(
-          async () => await doSummary(filename, fileContent, fileDiff)
+
+  if (!disableSummary) { // disable summary
+    for (const [filename, fileContent, fileDiff] of filesAndChanges) {
+      if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
+        summaryPromises.push(
+          openaiConcurrencyLimit(
+            async () => await doSummary(filename, fileContent, fileDiff)
+          )
         )
-      )
-    } else {
-      skippedFiles.push(filename)
-    }
-  }
-
-  const summaries = (await Promise.all(summaryPromises)).filter(
-    summary => summary !== null
-  ) as Array<[string, string, boolean]>
-
-  if (summaries.length > 0) {
-    const batchSize = 10
-    // join summaries into one in the batches of batchSize
-    // and ask the bot to summarize the summaries
-    for (let i = 0; i < summaries.length; i += batchSize) {
-      const summariesBatch = summaries.slice(i, i + batchSize)
-      for (const [filename, summary] of summariesBatch) {
-        inputs.rawSummary += `---
-${filename}: ${summary}
-`
-      }
-      // ask chatgpt to summarize the summaries
-      const [summarizeResp] = await heavyBot.chat(
-        prompts.renderSummarizeChangesets(inputs),
-        {}
-      )
-      if (summarizeResp === '') {
-        warning('summarize: nothing obtained from openai')
       } else {
-        inputs.rawSummary = summarizeResp
+        skippedFiles.push(filename)
       }
     }
-  }
-
-  // final summary
-  const [summarizeFinalResponse] = await heavyBot.chat(
-    prompts.renderSummarize(inputs),
-    {}
-  )
-  if (summarizeFinalResponse === '') {
-    info('summarize: nothing obtained from openai')
+  
+    const summaries = (await Promise.all(summaryPromises)).filter(
+      summary => summary !== null
+    ) as Array<[string, string, boolean]>
+  
+    if (summaries.length > 0) {
+      const batchSize = 10
+      // join summaries into one in the batches of batchSize
+      // and ask the bot to summarize the summaries
+      for (let i = 0; i < summaries.length; i += batchSize) {
+        const summariesBatch = summaries.slice(i, i + batchSize)
+        for (const [filename, summary] of summariesBatch) {
+          inputs.rawSummary += `---
+  ${filename}: ${summary}
+  `
+        }
+        // ask chatgpt to summarize the summaries
+        const [summarizeResp] = await heavyBot.chat(
+          prompts.renderSummarizeChangesets(inputs),
+          {}
+        )
+        if (summarizeResp === '') {
+          warning('summarize: nothing obtained from openai')
+        } else {
+          inputs.rawSummary = summarizeResp
+        }
+      }
+    }
+  
+    // final summary
+    const [summarizeFinalResponse] = await heavyBot.chat(
+      prompts.renderSummarize(inputs),
+      {}
+    )
+    if (summarizeFinalResponse === '') {
+      info('summarize: nothing obtained from openai')
+    }
   }
 
   if (options.disableReleaseNotes === false) {
@@ -391,83 +396,86 @@ ${filename}: ${summary}
   }
 
   // generate a short summary as well
-  const [summarizeShortResponse] = await heavyBot.chat(
-    prompts.renderSummarizeShort(inputs),
-    {}
-  )
-  inputs.shortSummary = summarizeShortResponse
+  if (!disableSummary) { // disable summary
+      const [summarizeShortResponse] = await heavyBot.chat(
+        prompts.renderSummarizeShort(inputs),
+        {}
+      )
+      inputs.shortSummary = summarizeShortResponse
+    
+      let summarizeComment = `${summarizeFinalResponse}
+    ${RAW_SUMMARY_START_TAG}
+    ${inputs.rawSummary}
+    ${RAW_SUMMARY_END_TAG}
+    ${SHORT_SUMMARY_START_TAG}
+    ${inputs.shortSummary}
+    ${SHORT_SUMMARY_END_TAG}
+    ---
+    
+    ### Chat with 🤖 OpenAI Bot (\`@openai\`)
+    - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
+    - Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+    
+    ### Code suggestions
+    - The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
+    - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
+    
+    ### Ignoring further reviews
+    - Type \`@openai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
+    
+    ---
+    
+    ${
+      filterIgnoredFiles.length > 0
+        ? `
+    <details>
+    <summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
+    
+    ### Ignored files
+    
+    * ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
+    
+    </details>
+    `
+        : ''
+    }
+    
+    ${
+      skippedFiles.length > 0
+        ? `
+    <details>
+    <summary>Files not processed due to max files limit (${
+            skippedFiles.length
+          })</summary>
+    
+    ### Not processed
+    
+    * ${skippedFiles.join('\n* ')}
+    
+    </details>
+    `
+        : ''
+    }
+    
+    ${
+      summariesFailed.length > 0
+        ? `
+    <details>
+    <summary>Files not summarized due to errors (${
+            summariesFailed.length
+          })</summary>
+    
+    ### Failed to summarize
+    
+    * ${summariesFailed.join('\n* ')}
+    
+    </details>
+    `
+        : ''
+    }
+    `
+  }
 
-  let summarizeComment = `${summarizeFinalResponse}
-${RAW_SUMMARY_START_TAG}
-${inputs.rawSummary}
-${RAW_SUMMARY_END_TAG}
-${SHORT_SUMMARY_START_TAG}
-${inputs.shortSummary}
-${SHORT_SUMMARY_END_TAG}
----
-
-### Chat with 🤖 OpenAI Bot (\`@openai\`)
-- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
-
-### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
-- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
-
-### Ignoring further reviews
-- Type \`@openai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
-
----
-
-${
-  filterIgnoredFiles.length > 0
-    ? `
-<details>
-<summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
-
-### Ignored files
-
-* ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
-
-</details>
-`
-    : ''
-}
-
-${
-  skippedFiles.length > 0
-    ? `
-<details>
-<summary>Files not processed due to max files limit (${
-        skippedFiles.length
-      })</summary>
-
-### Not processed
-
-* ${skippedFiles.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-
-${
-  summariesFailed.length > 0
-    ? `
-<details>
-<summary>Files not summarized due to errors (${
-        summariesFailed.length
-      })</summary>
-
-### Failed to summarize
-
-* ${summariesFailed.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-`
   if (!options.disableReview) {
     const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
       const needsReview =
