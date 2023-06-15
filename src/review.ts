@@ -262,7 +262,7 @@ ${hunks.oldHunk}
     fileContent: string,
     fileDiff: string
   ): Promise<[string, string, boolean] | null> => {
-    info(`summarize: ${filename}`)
+    info(`summarize!!: ${filename}`)
     const ins = inputs.clone()
     if (fileDiff.length === 0) {
       warning(`summarize: file_diff is empty, skip ${filename}`)
