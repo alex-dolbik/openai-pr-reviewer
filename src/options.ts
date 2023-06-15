@@ -114,6 +114,12 @@ export class PathFilter {
     let inclusionRuleExists = false
 
     for (const [rule, exclude] of this.rules) {
+      info(
+        `Path check: path - ${path}; rule - ${rule}; exclude - ${exclude}; result - ${minimatch(
+          path,
+          rule
+        )}`
+      )
       if (minimatch(path, rule)) {
         if (exclude) {
           excluded = true
