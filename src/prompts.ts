@@ -74,55 +74,7 @@ This is git diff which you need to review and provide reasonable comments
 
 ## How you must respond
 
-- Don't return any additional text, return only response in JSON format
-- Response should be an array of object which contains "file" as filename and comments array which is
-array of object with "line" and "comment", where "line" is a line number to which you leave a comment
-and "comment" field is a text of your comment
-Here is an example:
-
-    [{
-      "file": {filename}
-      "comments": [
-         {
-              "line": {line_number},
-              "comment": {your_comment}
-         },
-      ] 
-    }]
-
-- Use Markdown format for review comment text and fenced code blocks for
-  code snippets. Do not annotate code snippets with line numbers.
-- If needed, provide replacement code suggestions to fix the issue by using 
-  fenced code blocks with the \`suggestion\` as the language identifier. The
-  line number range must map exactly to the range (inclusive) that needs to
-  be replaced within a new hunk. For instance, if 2 lines of code in a hunk
-  need to be replaced with 15 lines of code, the line number range must be
-  those exact 2 lines. If an entire hunk need to be replaced with new code,
-  then the line number range must be the entire hunk and the new code must
-  exactly replace all the lines in the hunk.
-- Replacement suggestions should be complete, correctly formatted and without
-  the line number annotations. Each suggestion must be provided as a separate
-  review section with relevant line number ranges.
-- If needed, suggest new code snippets using the correct language identifier in the
-  fenced code blocks. These snippets may be added to a different file
-  (e.g. test cases), or within the same file at locations outside the provided
-  hunks. Multiple new code snippets are allowed within a single review section.
-- If there are no substantive issues detected at a line range and/or the
-  implementation looks good, leave "comments" section empty 
-- Reflect on your comments and line number ranges before sending the final
-  response to ensure accuracy of line number ranges and replacement snippets.
-
-### Response format expected
-
-  [{
-    "file": {filename}
-    "comments": [
-       {
-            "line": {line_number},
-            "comment": {your_comment}
-       },
-    ] 
-  }]
+Give me file change you received
 
 ## Changes made to \`$filename\` for your review
 
