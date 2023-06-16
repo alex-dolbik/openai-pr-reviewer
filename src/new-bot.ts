@@ -20,7 +20,7 @@ export interface Ids {
 }
 
 export class NewBot {
-  private readonly api: OpenAIApi | null = null // not free
+  private readonly api: any | null = null // not free
 
   private readonly options: Options
 
@@ -53,7 +53,7 @@ export class NewBot {
       res = await this.request({
         systemPrompt,
         userPrompt: message
-      })
+      }, ids)
       return res
     } catch (e: unknown) {
       if (e instanceof ChatGPTError) {
@@ -63,7 +63,7 @@ export class NewBot {
     }
   }
 
-  private request = async ({ systemPrompt, userPrompt }: { systemPrompt: string, userPrompt: string }): Promise<[string, Ids]> => {
+  private request = async ({ systemPrompt, userPrompt }: { systemPrompt: string, userPrompt: string }, ids: Ids): Promise<[string, Ids]> => {
     const result = await this.api.createChatCompletion({
       model: this.options.openaiLightModel,
       messages: [
@@ -92,6 +92,6 @@ export class NewBot {
       ]
     })
 
-    return [result]
+    return [result, ids]
   }
 }
