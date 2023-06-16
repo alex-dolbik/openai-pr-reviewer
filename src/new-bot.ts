@@ -40,6 +40,7 @@ export class NewBot {
   }
 
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
+    info('New bot request');
     let res: [string, Ids] = ['', {}]
     try {
       const systemPrompt = "you are a developer making a code review.\n" +

@@ -607,9 +607,10 @@ ${commentChain}
         }
 
         info(`review response: ${JSON.stringify(response)}`)
+        info(`review response type: ${typeof response}`)
 
         // parse review
-        const reviews = parseReview(response, patches, options.debug)
+        const reviews = [] //parseReview(response, patches, options.debug)
         try {
           const responseObj = JSON.parse(response)
           info(`parsing response text: ${responseObj.text}`)
