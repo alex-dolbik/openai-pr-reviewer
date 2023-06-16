@@ -605,6 +605,9 @@ ${commentChain}
           reviewsFailed.push(`${filename} (no response)`)
           return
         }
+
+        info(`review response: ${JSON.stringify(response)}`)
+
         // parse review
         const reviews = parseReview(response, patches, options.debug)
         for (const review of reviews) {
