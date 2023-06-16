@@ -6,6 +6,7 @@ import {
   warning
 } from '@actions/core'
 import {Bot} from './bot'
+import {NewBot} from './new-bot'
 import {OpenAIOptions, Options} from './options'
 import {Prompts} from './prompts'
 import {codeReview} from './review'
@@ -66,13 +67,26 @@ async function run(): Promise<void> {
     return
   }
 
+  let newBot: any | null = null
+  try {
+    newBot = new NewBot(
+      options,
+      new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
+    )
+  } catch (e: any) {
+    warning(
+      `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+    )
+    return
+  }
+
   try {
     // check if the event is pull_request
     if (
       process.env.GITHUB_EVENT_NAME === 'pull_request' ||
       process.env.GITHUB_EVENT_NAME === 'pull_request_target'
     ) {
-      await codeReview(lightBot, heavyBot, options, prompts)
+      await codeReview(lightBot, newBot, options, prompts)
     } else if (
       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
     ) {
