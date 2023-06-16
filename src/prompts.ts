@@ -69,11 +69,17 @@ exceed 250 words.
   reviewFileDiff = `
 ## How to parse the changes
 
-Parse these changes as regular Github PR diff change
+Each file diff starts with ---new_hunk---
+This is git diff which you need to review and provide reasonable comments
 
 ## How you must respond
 
-- Return response in JSON format in following structure
+- Don't return any additional text, return only response in JSON format
+- Response should be an array of object which contains "file" as filename and comments array which is
+array of object with "line" and "comment", where "line" is a line number to which you leave a comment
+and "comment" field is a text of your comment
+Here is an example:
+
     [{
       "file": {filename}
       "comments": [
