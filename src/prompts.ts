@@ -74,8 +74,8 @@ This is git diff which you need to review and provide reasonable comments
 
 ## How you must respond
 
-- Don't return any additional text, return only response in JSON format
-- Response should be an array of objects. Each object should have following structurecontain "file" as filename and comments array which is
+- Don't return any additional text, return ONLY response in JSON format and only comments
+- Response should be an array of objects. Each object should have following structure contain "file" as filename and comments array which is
 
 {
   "file": {filename}
@@ -123,6 +123,8 @@ and "comment" is a text of your comment
        },
     ] 
   }]
+
+EXCLUDE ANY additional text only review comments
 
 ## Here are changes made to \`$filename\` for your review. Please review it and return feedback in format provided above
 

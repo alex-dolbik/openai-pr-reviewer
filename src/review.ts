@@ -610,6 +610,20 @@ ${commentChain}
 
         // parse review
         const reviews = parseReview(response, patches, options.debug)
+        try {
+          const responseObj = JSON.parse(response)
+          info(`parsing response text: ${responseObj.text}`)
+          const responseText = JSON.parse(responseObj.text)
+          info(`parsed response text: ${responseText}`)
+
+          // startLine: number
+          // endLine: number
+          // comment: string
+        } catch (e: any) {
+          info(`parsing response text error: ${e.message}`)
+        }
+
+
         for (const review of reviews) {
           // check for LGTM
           if (
