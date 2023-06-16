@@ -69,50 +69,21 @@ exceed 250 words.
   reviewFileDiff = `
 ## How to parse the changes
 
-The format for changes provided below consists of multiple change 
-sections, each containing a new hunk (annotated with line numbers), 
-an old hunk, and optionally, existing comment chains. The line number annotation on each line in the new 
-hunk is of the format \`<line_number><colon><whitespace>\`.
-
-### Format for changes
-
-  ---new_hunk---
-  \`\`\`
-  <new hunk annotated with line numbers>
-  \`\`\`
-
-  ---old_hunk---
-  \`\`\`
-  <old hunk that was replaced by the new hunk above>
-  \`\`\`
-
-  ---comment_chains---
-  \`\`\`
-  <comment chains>
-  \`\`\`
-
-  ---end_change_section---
-  ...
+Parse these changes as regular Github PR diff change
 
 ## How you must respond
 
-- Your task is to review ONLY the new hunks line by line, ONLY pointing out 
-  substantive issues within line number ranges. Provide the exact line 
-  number range (inclusive) for each issue. Take into account any supplementary 
-  context from the old hunks, comment threads, and file contents during your 
-  review process. Concentrate on pinpointing particular problems, and refrain 
-  from offering summaries of changes, general feedback, or praise for 
-  exceptional work.
-- IMPORTANT: Respond only in the below response format (consisting of review 
-  sections). Each review section must have a line number range and a review 
-  comment for that range. Do not include general feedback or summaries. You 
-  may optionally include a single replacement suggestion snippet and/or 
-  multiple new code snippets in the review comment. Separate review sections 
-  using separators.
-- IMPORTANT: Line number ranges for each review section must be within the 
-  range of a specific new hunk. <start_line_number> must belong to the same 
-  hunk as the <end_line_number>. The line number range is sufficient to map 
-  your comment to the code changes in the GitHub pull request.
+- Return response in JSON format in following structure
+    [{
+      "file": {filename}
+      "comments": [
+         {
+              "line": {line_number},
+              "comment": {your_comment}
+         },
+      ] 
+    }]
+
 - Use Markdown format for review comment text and fenced code blocks for
   code snippets. Do not annotate code snippets with line numbers.
 - If needed, provide replacement code suggestions to fix the issue by using 
@@ -131,59 +102,21 @@ hunk is of the format \`<line_number><colon><whitespace>\`.
   (e.g. test cases), or within the same file at locations outside the provided
   hunks. Multiple new code snippets are allowed within a single review section.
 - If there are no substantive issues detected at a line range and/or the
-  implementation looks good, you must respond with the comment "LGTM!" and
-  nothing else for the respective line range in a review section.
+  implementation looks good, leave "comments" section empty 
 - Reflect on your comments and line number ranges before sending the final
   response to ensure accuracy of line number ranges and replacement snippets.
 
 ### Response format expected
 
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`suggestion
-  <code/text that replaces everything between start_line_number and end_line_number>
-  \`\`\`
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`<language>
-  <new code snippet>
-  \`\`\`
-  ---
-  ...
-
-## Example
-
-### Example changes
-
-  ---new_hunk---
-  1: def add(x, y):
-  2:     z = x+y
-  3:     retrn z
-  4:
-  5: def multiply(x, y):
-  6:     return x * y
-  
-  ---old_hunk---
-  def add(x, y):
-      return x + y
-
-### Example response
-
-  1-3:
-  There's a typo in the return statement.
-  \`\`\`suggestion
-  def add(x, y):
-      z = x + y
-      return z
-  \`\`\`
-  ---
-  5-6:
-  LGTM!
-  ---
+  [{
+    "file": {filename}
+    "comments": [
+       {
+            "line": {line_number},
+            "comment": {your_comment}
+       },
+    ] 
+  }]
 
 ## Changes made to \`$filename\` for your review
 
