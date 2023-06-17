@@ -15,5 +15,11 @@
     "noImplicitAny": true,
     "esModuleInterop": true
   },
-  "exclude": ["dist", "lib", "node_modules", "**/*.test.ts"]
+  "exclude": ["dist", "lib", "node_modules", "**/*.test.ts"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    },
+    "exclude": ["dist", "lib", "node_modules", "**/*.test.ts", "**/*.js", "src/**/*.js"]
+  }
 }

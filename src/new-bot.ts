@@ -1,7 +1,6 @@
-import './fetch-polyfill'
 
-const { Configuration, OpenAIApi } = require("openai");
-import {info, setFailed, warning} from '@actions/core'
+import { Configuration, OpenAIApi } from "openai";
+import {info, setFailed, warning, get} from '@actions/core'
 import {
   ChatGPTAPI,
   ChatGPTError,
@@ -39,7 +38,7 @@ export class NewBot {
     }
   }
 
-  chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
+  chat = async (message: string, ids?: Ids): Promise<[string, Ids]> => {
     info('New bot request');
     let res: [string, Ids] = ['', {}]
     try {
@@ -47,8 +46,11 @@ export class NewBot {
         "Here are some instructions:\n" +
         "This is a nodejs project.\n" +
         "Your response should fit as a comment on a GitHub pull request.\n" +
-        "If you haven't anything good to comment - don't comment.\n" +
-        "Use GitHub suggestions feature wherever possible.\n";
+        "Comment only important changes. \n" +
+        "Use GitHub suggestions feature wherever possible.\n" +
+        "Suggest code changes for each comment \n" +
+        "Do not leave comments" +
+        ""
 
       res = await this.request({
         systemPrompt,
@@ -63,9 +65,9 @@ export class NewBot {
     }
   }
 
-  private request = async ({ systemPrompt, userPrompt }: { systemPrompt: string, userPrompt: string }, ids: Ids): Promise<[string, Ids]> => {
+  private request = async ({ systemPrompt, userPrompt }: { systemPrompt: string, userPrompt: string }, ids?: Ids): Promise<[string, Ids]> => {
     const result = await this.api.createChatCompletion({
-      model: this.options.openaiLightModel,
+      model: "gpt-3.5-turbo-0613",
       messages: [
         { role: 'system', content: systemPrompt},
         {role: 'user', content: userPrompt}
@@ -83,7 +85,7 @@ export class NewBot {
               },
               "comments": {
                 "type": "string",
-                "description": "json containing objects with <line> and <comment>"
+                "description": "json containing objects with <line>, <comment>, <suggestion>"
               },
             }
           },
@@ -92,6 +94,6 @@ export class NewBot {
       ]
     })
 
-    return [result, ids]
+    return [result.data.choices, ids as Ids]
   }
 }

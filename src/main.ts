@@ -1,7 +1,7 @@
 import {
   getBooleanInput,
   getInput,
-  getMultilineInput,
+  getMultilineInput, info,
   setFailed,
   warning
 } from '@actions/core'
@@ -11,8 +11,11 @@ import {OpenAIOptions, Options} from './options'
 import {Prompts} from './prompts'
 import {codeReview} from './review'
 import {handleReviewComment} from './review-comment'
+import {context as github_context} from '@actions/github'
 
 async function run(): Promise<void> {
+  info(`Github context: ${JSON.stringify(github_context)}`)
+
   const options: Options = new Options(
     getBooleanInput('debug'),
     getBooleanInput('disable_review'),
